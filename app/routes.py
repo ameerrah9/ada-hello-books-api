@@ -1,31 +1,34 @@
 # provides a pattern for grouping related routes
-from flask import Blueprint
+# from flask import Blueprint
+# group of imports
+from flask import Blueprint, jsonify
 
-hello_world_bp = Blueprint("hello_world", __name__)
+# instantiate a new Book class
+class Book:
+    def __init__(self, id, title, description):
+        self.id = id
+        self.title = title
+        self.description = description
 
-# create an endpoint
-@hello_world_bp.route("/hello-world", methods=["GET"])
-def say_hello_world():
-    my_beautiful_response_body = "Hello, World!"
-    return my_beautiful_response_body
+books = [
+    Book(1, "Fictional Book Title", "A fantasy novel set in an imaginary world."),
+    Book(2, "Fictional Book Title", "A fantasy novel set in an imaginary world."),
+    Book(3, "Fictional Book Title", "A fantasy novel set in an imaginary world.")
+]
 
-# create another endpoint that returns JSON
-@hello_world_bp.route("/hello/JSON", methods=["GET"])
-def say_hello_json():
-    return {
-        "name": "Ada Lovelace",
-        "message": "Hello!",
-        "hobbies": ["Fishing", "Swimming", "Watching Reality Shows"]
-    }
+# create a group of related books routes
+# all books routes will be prefixed with /books
+# first argument is the name of the blueprint
+books_bp = Blueprint("books", __name__, url_prefix="/books")
 
-# create another endpoint that returns JSON with an error
-@hello_world_bp.route("/broken-endpoint-with-broken-server-code")
-def broken_endpoint():
-    response_body = {
-        "name": "Ada Lovelace",
-        "message": "Hello!",
-        "hobbies": ["Fishing", "Swimming", "Watching Reality Shows"]
-    }
-    new_hobby = "Surfing"
-    response_body["hobbies"].append(new_hobby)
-    return response_body
+# define a route for the books resource
+@books_bp.route("", methods=["GET"])
+def handle_books():
+    books_response = []
+    for book in books:
+        books_response.append({
+            "id": book.id,
+            "title": book.title,
+            "description": book.description
+        })
+    return jsonify(books_response)
