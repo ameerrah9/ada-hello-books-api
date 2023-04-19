@@ -1,7 +1,7 @@
 # provides a pattern for grouping related routes
 # from flask import Blueprint
 # group of imports
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, abort, make_response
 
 # instantiate a new Book class
 class Book:
@@ -33,14 +33,28 @@ def handle_books():
         })
     return jsonify(books_response)
 
+# validate a book helper function
+def validate_book(book_id):
+    # validate book_id is an integer
+    try:
+        book_id = int(book_id)
+    except:
+        abort(make_response({"message":f"book {book_id} invalid"}, 400))
+
+    for book in books:
+        if book.id == book_id:
+            return book
+
+    # if book_id is not found, return 404
+    abort(make_response({"message":f"book {book_id} not found"}, 404))
+
 # define a route for a single book resource
 @books_bp.route("/<book_id>", methods=["GET"])
 def handle_book(book_id):
-    book_id = int(book_id)
-    for book in books:
-        if book.id == book_id:
-            return {
-                "id": book.id,
-                "title": book.title,
-                "description": book.description
-            }
+    book = validate_book(book_id)
+
+    return {
+        "id": book.id,
+        "title": book.title,
+        "description": book.description
+    }
