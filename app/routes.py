@@ -5,6 +5,8 @@ from app import db
 from app.models.book import Book
 from flask import Blueprint, jsonify, abort, make_response, request
 
+# Aauthor resources
+# BOOK RESOURCES
 books_bp = Blueprint("books", __name__, url_prefix="/books")
 
 # instantiate a new Book class
@@ -65,12 +67,65 @@ books_bp = Blueprint("books", __name__, url_prefix="/books")
 
 # define a route for creating a book resource
 @books_bp.route("", methods=["POST"])
-def handle_books():
-    request_body = request.get_json()
-    new_book = Book(title=request_body["title"],
-                    description=request_body["description"])
+def create_book():
+        request_body = request.get_json()
+        new_book = Book(title=request_body["title"],
+                        description=request_body["description"])
 
-    db.session.add(new_book)
+        db.session.add(new_book)
+        db.session.commit()
+
+        return make_response(f"Book {new_book.title} successfully created", 201)
+
+# define a route for getting all books
+@books_bp.route("", methods=["GET"])
+def read_all_books():
+    books_response = []
+    books = Book.query.all()
+    for book in books:
+        books_response.append(
+            {
+                "id": book.id,
+                "title": book.title,
+                "description": book.description
+            }
+        )
+    return jsonify(books_response)
+
+# define a route for getting one book
+# GET /books/id
+def handle_book(book_id):
+    # Query our db to grab the book that has the id we want:
+    book = Book.query.get(book_id)
+    
+    # Show a single book
+    if request.method == "GET":
+        return {
+            "id": book.id,
+            "title": book.title,
+            "description": book.description
+        }
+
+# define a route for updating a book
+@books_bp.route("", methods=["PUT"])
+def update_book(book_id):
+    book = Book.query.get(book_id)
+
+    request_body = request.get_json()
+
+    book.title = request_body["title"]
+    book.description = request_body["description"]
+
     db.session.commit()
 
-    return make_response(f"Book {new_book.title} successfully created", 201)
+    return make_response(f"Book #{book.id} successfully updated")
+
+# define a route for deleting a book
+@books_bp.route("", methods=["DELETE"])
+def delete_book(book_id):
+    book = Book.query.get(book_id)
+
+    db.session.delete(book)
+    db.session.commit()
+
+    return make_response(f"Book #{book.id} successfully deleted")
