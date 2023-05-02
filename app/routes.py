@@ -40,19 +40,20 @@ books_bp = Blueprint("books", __name__, url_prefix="/books")
 #     return jsonify(books_response)
 
 # # validate a book helper function
-# def validate_book(book_id):
-#     # validate book_id is an integer
-#     try:
-#         book_id = int(book_id)
-#     except:
-#         abort(make_response({"message":f"book {book_id} invalid"}, 400))
+def validate_book(book_id):
+    # validate book_id is an integer
+    try:
+        book_id = int(book_id)
+    except:
+        abort(make_response({"message":f"book {book_id} invalid"}, 400))
 
-#     for book in books:
-#         if book.id == book_id:
-#             return book
-
-#     # if book_id is not found, return 404
-#     abort(make_response({"message":f"book {book_id} not found"}, 404))
+    book = Book.query.get(book_id)
+    
+    if not book:
+        # if book_id is not found, return 404
+        abort(make_response({"message":f"book {book_id} not found"}, 404))
+    
+    return book
 
 # # define a route for a single book resource
 # @books_bp.route("/<book_id>", methods=["GET"])
@@ -80,8 +81,14 @@ def create_book():
 # define a route for getting all books
 @books_bp.route("", methods=["GET"])
 def read_all_books():
+    title_query = request.args.get("title")
+    
+    if title_query:
+        books = Book.query.filter_by(title=title_query)
+    else:
+        books = Book.query.all()
+
     books_response = []
-    books = Book.query.all()
     for book in books:
         books_response.append(
             {
@@ -94,22 +101,22 @@ def read_all_books():
 
 # define a route for getting one book
 # GET /books/id
+@books_bp.route("/<book_id>", methods=["GET"])
 def handle_book(book_id):
     # Query our db to grab the book that has the id we want:
-    book = Book.query.get(book_id)
+    book = validate_book(book_id)
     
     # Show a single book
-    if request.method == "GET":
-        return {
-            "id": book.id,
-            "title": book.title,
-            "description": book.description
-        }
+    return {
+        "id": book.id,
+        "title": book.title,
+        "description": book.description
+    }, 200
 
 # define a route for updating a book
-@books_bp.route("", methods=["PUT"])
+@books_bp.route("/<book_id>", methods=["PUT"])
 def update_book(book_id):
-    book = Book.query.get(book_id)
+    book = validate_book(book_id)
 
     request_body = request.get_json()
 
@@ -118,12 +125,18 @@ def update_book(book_id):
 
     db.session.commit()
 
-    return make_response(f"Book #{book.id} successfully updated")
+    # NOTE: When we don’t use make_response, we can’t access 
+    # status codes and headers, can return HTML instead of JSON – we want json! 
+    return {
+        "id": book.id,
+        "title": book.title,
+        "description": book.description
+    }, 200
 
 # define a route for deleting a book
-@books_bp.route("", methods=["DELETE"])
+@books_bp.route("/<book_id>", methods=["DELETE"])
 def delete_book(book_id):
-    book = Book.query.get(book_id)
+    book = validate_book(book_id)
 
     db.session.delete(book)
     db.session.commit()
