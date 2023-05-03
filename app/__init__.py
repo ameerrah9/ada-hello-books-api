@@ -26,6 +26,8 @@ def create_app(test_config=None):
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
             "SQLALCHEMY_DATABASE_URI")
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+            "DATABASE_URL")
     else:
         # If there is a test_config passed in, 
         # this means we're trying to test the app, 
@@ -40,9 +42,13 @@ def create_app(test_config=None):
     migrate.init_app(app, db)
 
     # register the books blueprint
-    from .routes import books_bp
+    from .book_routes import books_bp
     app.register_blueprint(books_bp)
 
+    from .author_routes import authors_bp
+    app.register_blueprint(authors_bp)
+    
     from app.models.book import Book
+    from app.models.author import Author
 
     return app
